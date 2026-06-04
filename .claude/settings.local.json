@@ -1,0 +1,17 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(pip install *)",
+      "Bash(uv init *)",
+      "Bash(rm main.py)",
+      "Bash(uv add *)",
+      "Read(//c/Users/51062/.claude/plans//**)",
+      "Read(//c/Users/51062/.claude/plans/**)",
+      "Bash(uv run *)",
+      "Bash(PORT=not_a_number uv run python -c \"from app.core.config import settings; print\\(settings.port\\)\")",
+      "Bash(curl -s http://127.0.0.1:8000/health)",
+      "Bash(curl -s http://127.0.0.1:8000/)",
+      "Bash(curl -s --max-time 30 -X POST http://127.0.0.1:8000/chat/stream -H \"Content-Type: application/json\" -d '{\"query\":\"用一句话介绍你自己\"}')"
+    ]
+  }
+}
