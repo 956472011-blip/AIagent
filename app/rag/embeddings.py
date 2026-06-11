@@ -1,9 +1,12 @@
 """Embedding 模型工厂。
 
-MiniMax 的 embeddings 端点走自研协议(不是 OpenAI 协议),
-所以这里直接用 httpx 调用,不用 langchain_openai。
-请求: {"model", "texts":[...], "type":"db"}
-响应: {"vectors": [[...], ...], "total_tokens": N, "base_resp": {...}}
+M2-M3 早期: 用 MiniMax embo-01 (自研协议, 偶尔不稳)
+M3 后期: 换阿里 DashScope text-embedding-v4 (中文友好, 协议稳定, 已用 DashScope key 顺手)
+
+DashScope embedding 协议:
+    POST /api/v1/services/embeddings/text-embedding/text-embedding
+    请求: {"model", "input": {"texts": [...]}, "parameters": {"dimension": N}}
+    响应: {"output": {"embeddings": [{"embedding": [...]}]}, "usage": {...}}
 """
 from functools import lru_cache
 
@@ -13,84 +16,72 @@ from langchain_core.embeddings import Embeddings
 from app.core.config import settings
 
 
-class MiniMaxEmbeddings(Embeddings):
-    """MiniMax embedding 接口的 LangChain 适配器。
+_EMBEDDING_URL = (
+    "https://dashscope.aliyuncs.com/api/v1/services/embeddings/text-embedding/text-embedding"
+)
 
-    LangChain 协议要求实现两个方法:
-    - aembed_documents(texts) -> List[List[float]]   入库时批量调用
-    - aembed_query(text)       -> List[float]         检索时单条调用
-    """
 
-    def __init__(self, model: str, api_key: str, base_url: str) -> None:
+class DashScopeEmbeddings(Embeddings):
+    """DashScope text-embedding-v4 的 LangChain 适配器。"""
+
+    def __init__(self, model: str, api_key: str, dimension: int = 1536) -> None:
         self._model = model
+        self._dimension = dimension
         self._headers = {
             "Authorization": f"Bearer {api_key}",
             "Content-Type": "application/json",
         }
-        # OpenAI 协议兼容的 base_url 通常是 .../v1,我们这里要拼 .../v1/embeddings
-        self._url = base_url.rstrip("/") + "/embeddings"
 
-    async def _embed(self, texts: list[str]) -> list[list[float]]:
-        async with httpx.AsyncClient(timeout=60.0) as client:
-            response = await client.post(
-                self._url,
-                headers=self._headers,
-                json={"model": self._model, "texts": texts, "type": "db"},
-            )
-            response.raise_for_status()
-            payload = response.json()
-
-        if payload.get("base_resp", {}).get("status_code") != 0:
-            raise RuntimeError(f"MiniMax embedding 失败: {payload}")
-
-        vectors = payload.get("vectors")
-        if not vectors:
-            raise RuntimeError(f"MiniMax embedding 返回空 vectors: {payload}")
-
-        return vectors
-
-    async def aembed_documents(self, texts: list[str]) -> list[list[float]]:
-        """批量嵌入文档。"""
-        return await self._embed(texts)
-
-    async def aembed_query(self, text: str) -> list[float]:
-        """单条嵌入查询。"""
-        vectors = await self._embed([text])
-        return vectors[0]
-
-    # === 同步版本(基类要求) ===
-
-    def _embed_sync(self, texts: list[str]) -> list[list[float]]:
+    def _call(self, texts: list[str]) -> list[list[float]]:
+        """同步调用 DashScope embedding API。"""
         with httpx.Client(timeout=60.0) as client:
             response = client.post(
-                self._url,
+                _EMBEDDING_URL,
                 headers=self._headers,
-                json={"model": self._model, "texts": texts, "type": "db"},
+                json={
+                    "model": self._model,
+                    "input": {"texts": texts},
+                    "parameters": {"dimension": self._dimension},
+                },
             )
             response.raise_for_status()
-            payload = response.json()
-        if payload.get("base_resp", {}).get("status_code") != 0:
-            raise RuntimeError(f"MiniMax embedding 失败: {payload}")
-        vectors = payload.get("vectors")
-        if not vectors:
-            raise RuntimeError(f"MiniMax embedding 返回空 vectors: {payload}")
-        return vectors
+            data = response.json()
+
+        embeddings = data.get("output", {}).get("embeddings", [])
+        if not embeddings:
+            raise RuntimeError(f"DashScope embedding 返回空: {data}")
+
+        return [item["embedding"] for item in embeddings]
+
+    async def aembed_documents(self, texts: list[str]) -> list[list[float]]:
+        return await asyncio.to_thread(self._call, texts)
+
+    async def aembed_query(self, text: str) -> list[float]:
+        vectors = await asyncio.to_thread(self._call, [text])
+        return vectors[0]
+
+    # === 同步版本 (基类要求) ===
 
     def embed_documents(self, texts: list[str]) -> list[list[float]]:
-        return self._embed_sync(texts)
+        return self._call(texts)
 
     def embed_query(self, text: str) -> list[float]:
-        return self._embed_sync([text])[0]
+        return self._call([text])[0]
+
+
+# 让 asyncio.to_thread 可用
+import asyncio
 
 
 @lru_cache(maxsize=1)
 def get_embeddings() -> Embeddings:
     """获取 Embedding 模型单例。"""
-    if not settings.openai_api_key:
-        raise ValueError("OPENAI_API_KEY 未配置!请在 .env 里设置后重启服务。")
-
-    return MiniMaxEmbeddings(
+    if not settings.dashscope_api_key:
+        raise ValueError("DASHSCOPE_API_KEY 未配置!请在 .env 里设置。")
+    if not settings.embedding_model:
+        raise ValueError("EMBEDDING_MODEL 未配置!请在 .env 里设置, 例如 text-embedding-v4。")
+    return DashScopeEmbeddings(
         model=settings.embedding_model,
-        api_key=settings.openai_api_key,
-        base_url=settings.openai_base_url,
+        api_key=settings.dashscope_api_key,
+        dimension=settings.embedding_dim,
     )

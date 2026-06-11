@@ -1,0 +1,20 @@
+{"id": 1, "question": "RAG 的核心流程包含哪 6 个步骤？", "ground_truth": "1. 文档加载 2. 文本切片 3. 向量化 4. 入库存储 5. 检索 6. 生成"}
+{"id": 2, "question": "朴素 RAG 的三大痛点是什么？", "ground_truth": "1. 检索质量差 (关键词不敏感) 2. 召回不全 (单路召回) 3. 上下文窗口有限"}
+{"id": 3, "question": "Qdrant 的默认端口是多少？", "ground_truth": "6333 (REST) 和 6334 (gRPC)"}
+{"id": 4, "question": "Milvus 适合什么数据规模？", "ground_truth": "千万到百亿级, 适合超大规模场景"}
+{"id": 5, "question": "LangGraph 跟 LangChain 的核心区别是什么？", "ground_truth": "LangChain 是 Chain 顺序调用, LangGraph 是 StateGraph 状态机, 支持循环和条件分支"}
+{"id": 6, "question": "MCP 是哪家公司提出的？", "ground_truth": "Anthropic"}
+{"id": 7, "question": "Qdrant 默认用什么距离算法？", "ground_truth": "Cosine (余弦相似度)"}
+{"id": 8, "question": "BGE-reranker 属于什么类型的模型？", "ground_truth": "Cross-Encoder 精排模型, 用于对粗排候选做精排"}
+{"id": 9, "question": "Hybrid 检索用 RRF 融合, RRF 是什么缩写？", "ground_truth": "Reciprocal Rank Fusion, 倒数排名融合"}
+{"id": 10, "question": "RAGAS 评测有哪 4 个核心指标？", "ground_truth": "Context Precision、Context Recall、Faithfulness、Answer Relevancy"}
+{"id": 11, "question": "为什么我们项目选 Qdrant 不选 Milvus？", "ground_truth": "1. 学习曲线平缓 2. 单文件部署简单 3. Rust 性能足够 4. 跟 LangChain 集成成熟"}
+{"id": 12, "question": "我们项目的 RAG 系统跑在哪台服务器？", "ground_truth": "云服务器 118.25.107.222, 端口 6333"}
+{"id": 13, "question": "HyDE 是什么技术？", "ground_truth": "Hypothetical Document Embeddings, 让 LLM 假想一个答案, 用假想答案去检索"}
+{"id": 14, "question": "LangGraph 的 Checkpoint 机制能干什么？", "ground_truth": "持久化状态快照, 实现时间旅行和断点续跑"}
+{"id": 15, "question": "ReAct 范式的全称是什么？", "ground_truth": "Reason + Act, 推理加行动"}
+{"id": 16, "question": "iPhone 16 多少钱？", "ground_truth": "文档未提供, 无法回答"}
+{"id": 17, "question": "你们公司用 RAG 吗？", "ground_truth": "文档未提供, 无法回答"}
+{"id": 18, "question": "Qdrant 跟 Weaviate 比有什么优势？", "ground_truth": "Qdrant 是 Rust 写的, 性能强, 单文件部署简单, 学习成本低; Weaviate 强项是 GraphQL 关系查询和内置向量化模块"}
+{"id": 19, "question": "RAG 跟 Fine-tuning 怎么选？", "ground_truth": "数据量小 + 需要最新信息选 RAG, 数据量大 + 需要改风格选 FT, 也可两者结合"}
+{"id": 20, "question": "LangSmith 在我们 M7 阶段会接入, 它能做什么？", "ground_truth": "记录 LLM 调用的 prompt/response/token/延迟, 追踪 chain 节点, 标注 bad case 攒评测集"}

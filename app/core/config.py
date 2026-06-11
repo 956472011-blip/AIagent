@@ -49,6 +49,9 @@ class Settings(BaseSettings):
     embedding_model: str = "embo-01"
     embedding_dim: int = 1536
 
+    # === Rerank (M3+ 启用) ===
+    dashscope_api_key: str | None = None
+
 
 # 模块级单例:整个进程共享一份配置
 # Java 类比: @Configuration class AppConfig { @Bean Settings settings() {...} }
