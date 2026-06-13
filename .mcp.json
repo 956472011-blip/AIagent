@@ -1,0 +1,11 @@
+{
+  "mcpServers": {
+    "postgres": {
+      "command": "python",
+      "args": ["-m", "mcp_server_postgres"],
+      "env": {
+        "POSTGRES_CONNECTION_STRING": "postgresql://postgres:Kp7sQv2#zRg9mBn&tA5@118.25.107.222:5432/aiagent"
+      }
+    }
+  }
+}

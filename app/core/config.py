@@ -52,6 +52,22 @@ class Settings(BaseSettings):
     # === Rerank (M3+ 启用) ===
     dashscope_api_key: str | None = None
 
+    # === Database (PostgreSQL) ===
+    database_url: str = "postgresql://postgres:password@localhost:5432/aiagent"
+
+    # === Redis (Session) ===
+    redis_url: str = "redis://localhost:6379/0"
+    redis_host: str = "localhost"
+    redis_port: int = 6379
+    redis_password: str | None = None
+
+    # === Session ===
+    session_expire_seconds: int = 86400  # 24 hours
+    session_cookie_name: str = "session_id"
+    session_cookie_secure: bool = False  # 开发环境用 False，生产环境用 True
+    session_cookie_httponly: bool = True
+    session_cookie_samesite: str = "lax"
+
 
 # 模块级单例:整个进程共享一份配置
 # Java 类比: @Configuration class AppConfig { @Bean Settings settings() {...} }
