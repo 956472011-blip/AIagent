@@ -1,12 +1,11 @@
 /**
- * 认证相关类型定义
+ * 认证类型定义
  */
 
 export interface User {
   id: number
   username: string
-  email: string
-  full_name: string | null
+  email?: string
 }
 
 export interface LoginRequest {
@@ -16,22 +15,12 @@ export interface LoginRequest {
 
 export interface RegisterRequest {
   username: string
-  email: string
   password: string
-  full_name?: string
+  email?: string
 }
 
-export interface AuthStatus {
-  is_authenticated: boolean
-  user: User | null
-}
-
-export interface AuthContextType {
-  user: User | null
-  isAuthenticated: boolean
-  isLoading: boolean
-  login: (username: string, password: string) => Promise<void>
-  register: (data: RegisterRequest) => Promise<void>
-  logout: () => Promise<void>
-  checkAuth: () => Promise<void>
+export interface Token {
+  access_token: string
+  token_type: string
+  user: User
 }

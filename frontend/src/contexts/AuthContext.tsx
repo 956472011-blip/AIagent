@@ -1,80 +1,86 @@
 /**
- * 认证 Context
+ * 认证 Context - JWT Token 管理
  *
  * 企业级设计:
- *   - 全局认证状态管理
- *   - 自动检查登录状态
- *   - 提供 login/logout 方法
+ *   - Token 存储在 LocalStorage
+ *   - 自动验证 Token 有效性
+ *   - Token 过期自动跳转登录
  */
 
-import { createContext, useContext, useEffect, useState, useCallback, type ReactNode } from 'react'
-import { authApi } from '@/api'
-import type { User, RegisterRequest, AuthContextType } from '@/types'
+import { createContext, useContext, useEffect, useState, useCallback } from 'react'
+import type { ReactNode } from 'react'
 
-const AuthContext = createContext<AuthContextType | null>(null)
+import * as authApi from '@/api/auth'
+import type { User } from '@/api/auth'
 
-interface AuthProviderProps {
-  children: ReactNode
+interface AuthContextValue {
+  user: User | null
+  loading: boolean
+  login: (username: string, password: string) => Promise<void>
+  register: (username: string, password: string, email?: string) => Promise<void>
+  logout: () => void
 }
 
-export function AuthProvider({ children }: AuthProviderProps) {
+const AuthContext = createContext<AuthContextValue | null>(null)
+
+export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null)
-  const [isLoading, setIsLoading] = useState(true)
+  const [loading, setLoading] = useState(true)
 
-  const isAuthenticated = user !== null
+  // 初始化:验证 Token
+  useEffect(() => {
+    const initAuth = async () => {
+      const token = localStorage.getItem('access_token')
 
-  // 检查认证状态
-  const checkAuth = useCallback(async () => {
-    try {
-      const status = await authApi.getStatus()
-      setUser(status.is_authenticated ? status.user : null)
-    } catch {
-      setUser(null)
+      if (!token) {
+        setLoading(false)
+        return
+      }
+
+      try {
+        // 验证 Token 有效性
+        const userData = await authApi.getCurrentUser()
+        setUser(userData)
+      } catch (error) {
+        // Token 无效,清除
+        localStorage.removeItem('access_token')
+        setUser(null)
+      } finally {
+        setLoading(false)
+      }
     }
+
+    initAuth()
   }, [])
 
   // 登录
   const login = useCallback(async (username: string, password: string) => {
-    const loggedInUser = await authApi.login(username, password)
-    setUser(loggedInUser)
+    const result = await authApi.login({ username, password })
+    setUser(result.user)
   }, [])
 
   // 注册
-  const register = useCallback(async (data: RegisterRequest) => {
-    const newUser = await authApi.register(data)
-    setUser(newUser)
-  }, [])
+  const register = useCallback(async (username: string, password: string, email?: string) => {
+    const user = await authApi.register({ username, password, email })
+    // 注册成功后自动登录
+    await login(username, password)
+    setUser(user)
+  }, [login])
 
   // 登出
-  const logout = useCallback(async () => {
-    await authApi.logout()
+  const logout = useCallback(() => {
+    authApi.logout()
     setUser(null)
   }, [])
 
-  // 初始化时检查认证状态
-  useEffect(() => {
-    checkAuth().finally(() => setIsLoading(false))
-  }, [checkAuth])
-
-  const value: AuthContextType = {
-    user,
-    isAuthenticated,
-    isLoading,
-    login,
-    register,
-    logout,
-    checkAuth,
-  }
-
   return (
-    <AuthContext.Provider value={value}>
+    <AuthContext.Provider value={{ user, loading, login, register, logout }}>
       {children}
     </AuthContext.Provider>
   )
 }
 
-// 自定义 Hook
-export function useAuth(): AuthContextType {
+export function useAuth() {
   const context = useContext(AuthContext)
   if (!context) {
     throw new Error('useAuth must be used within AuthProvider')
