@@ -8,7 +8,7 @@ from __future__ import annotations
 from typing import Any
 
 from app.db.database import db_pool
-from app.db.security import hash_password, verify_password
+from app.core.security import hash_password, verify_password
 
 
 class UserRepository:
