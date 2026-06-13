@@ -3,8 +3,9 @@
  *
  * 企业级设计:
  *   - 自动携带 JWT Token
- *   - Token 过期自动刷新
+ *   - Token 过期自动跳转登录
  *   - 统一错误处理
+ *   - 使用 URL API 处理查询参数(避免手动拼接错误)
  */
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || ''
@@ -102,9 +103,24 @@ export async function del<T>(url: string): Promise<T> {
 
 /**
  * SSE 流式请求
+ *
+ * 使用 URL API 处理查询参数,自动管理 ? 和 &
+ * 避免手动拼接 URL 错误
+ *
+ * 示例:
+ *   输入: "/api/chat/stream/get?q=你好"
+ *   输出: "http://localhost:8000/api/chat/stream/get?q=你好&token=xxx"
  */
 export function createEventSource(url: string): EventSource {
   const token = getToken()
-  const fullUrl = `${API_BASE_URL}${url}${token ? `&token=${token}` : ''}`
-  return new EventSource(fullUrl)
+
+  // 拼接基础地址(处理绝对路径和相对路径)
+  const urlObj = new URL(url, API_BASE_URL || window.location.origin)
+
+  // 追加 token 参数(URL API 自动管理 ? 和 &)
+  if (token) {
+    urlObj.searchParams.set('token', token)
+  }
+
+  return new EventSource(urlObj.href)
 }
