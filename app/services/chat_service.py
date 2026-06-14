@@ -70,12 +70,11 @@ class ChatService:
                 yield {"node": node_name, "output": node_output}
 
 
-# 单例模式
-_chat_service: ChatService | None = None
+# 单例模式(使用 lru_cache)
+from functools import lru_cache
 
 
+@lru_cache(maxsize=1)
 def get_chat_service() -> ChatService:
     """获取聊天服务单例。"""
-    if _chat_service is None:
-        _chat_service = ChatService()
-    return _chat_service
+    return ChatService()

@@ -55,3 +55,11 @@ class TokenPayload(SQLModel):
     sub: str  # username
     user_id: int
     exp: datetime | None = None
+
+
+class UserResponse(SQLModel):
+    """用户信息响应。"""
+
+    id: int
+    username: str
+    email: str | None = None

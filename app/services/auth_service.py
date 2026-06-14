@@ -10,13 +10,10 @@ from __future__ import annotations
 from datetime import datetime, timedelta, timezone
 
 import jwt
-from passlib.context import CryptContext
 
 from app.core.config import settings
+from app.core.security import hash_password, verify_password
 from app.db.repositories.user_repo import UserRepository
-
-# 密码加密上下文
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 
 class AuthService:
@@ -27,11 +24,11 @@ class AuthService:
 
     def verify_password(self, plain_password: str, hashed_password: str) -> bool:
         """校验密码。"""
-        return pwd_context.verify(plain_password, hashed_password)
+        return verify_password(plain_password, hashed_password)
 
     def hash_password(self, password: str) -> str:
         """加密密码。"""
-        return pwd_context.hash(password)
+        return hash_password(password)
 
     def create_access_token(self, data: dict, expires_delta: timedelta | None = None) -> str:
         """生成 JWT Token。"""
@@ -64,7 +61,7 @@ class AuthService:
             email=email,
         )
 
-        return {"id": user.id, "username": user.username}
+        return {"id": user["id"], "username": user["username"], "email": user.get("email")}
 
     async def login(self, username: str, password: str) -> dict:
         """用户登录。"""
@@ -72,17 +69,17 @@ class AuthService:
         if not user:
             raise ValueError("用户名或密码错误")
 
-        if not self.verify_password(password, user.hashed_password):
+        if not self.verify_password(password, user["hashed_password"]):
             raise ValueError("用户名或密码错误")
 
         # 生成 Token
         access_token = self.create_access_token(
-            data={"sub": user.username, "user_id": user.id},
+            data={"sub": user["username"], "user_id": user["id"]},
             expires_delta=timedelta(minutes=settings.jwt_expire_minutes),
         )
 
         return {
             "access_token": access_token,
             "token_type": "bearer",
-            "user": {"id": user.id, "username": user.username},
+            "user": {"id": user["id"], "username": user["username"]},
         }
